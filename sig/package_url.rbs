@@ -1,16 +1,3 @@
-# A package URL, or _purl_, is a URL string used to identify and locate a software package
-# in a mostly universal and uniform way across
-# programing languages, package managers, packaging conventions, tools, APIs and databases.
-#
-# A purl is a URL composed of seven components:
-#
-# ```
-# scheme:type/namespace/name@version?qualifiers#subpath
-# ```
-#
-# For example,
-# the package URL for this Ruby package at version 0.1.0 is
-# `pkg:ruby/mattt/packageurl-ruby@0.1.0`.
 class PackageURL
   VERSION: String
 
@@ -31,14 +18,23 @@ class PackageURL
                 
   def self.parse: (String string) -> PackageURL?
 
-  def to_h: () -> { scheme: String, type: String, namespace: String?, name: String?, version: String?, qualifiers: Hash[String, String]?, subpath: String? }
+  def to_h: () -> { scheme: String, 
+                    type: String, 
+                    namespace: String?, 
+                    name: String?, 
+                    version: String?, 
+                    qualifiers: Hash[String, String]?, 
+                    subpath: String? }
 
-  # Returns a string representation of the package URL.
-  # Package URL representations are created according to the instructions provided at
-  # https://github.com/package-url/purl-spec/blob/0b1559f76b79829e789c4f20e6d832c7314762c5/PURL-SPECIFICATION.rst#how-to-build-purl-string-from-its-components.
   def to_s: () -> String
 
   def deconstruct: () -> Array[String | Hash[String, String] | nil]
 
-  def deconstruct_keys: (Array[Symbol] keys) -> { scheme: String, type: String, namespace: String?, name: String?, version: String?, qualifiers: Hash[String, String]?, subpath: String? }
+  def deconstruct_keys: (Array[Symbol] keys) -> { scheme: String, 
+                                                  type: String, 
+                                                  namespace: String?, 
+                                                  name: String?, 
+                                                  version: String?, 
+                                                  qualifiers: Hash[String, String]?, 
+                                                  subpath: String? }
 end

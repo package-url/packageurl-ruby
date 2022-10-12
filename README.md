@@ -31,7 +31,7 @@ $ gem install packageurl-ruby
 ## Usage
 
 ```ruby
-require 'packageurl-ruby'
+require 'package_url'
 
 purl = PackageURL.parse("pkg:gem/rails@6.1.4")
 purl.type # "gem"

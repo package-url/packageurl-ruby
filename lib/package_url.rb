@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative 'package_url/string_utils'
 require_relative 'package_url/version'
 
 require 'uri'
@@ -22,6 +23,9 @@ class PackageURL
   # Raised when attempting to parse an invalid package URL string.
   # @see #parse
   class InvalidPackageURL < ArgumentError; end
+
+  include StringUtils
+  extend StringUtils
 
   # The URL scheme, which has a constant value of `"pkg"`.
   def scheme
@@ -182,7 +186,7 @@ class PackageURL
     else
       purl += serialized_namespace
       purl += '/'
-      purl += URI.encode_www_form_component(self.class.strip(@name, '/'))
+      purl += URI.encode_www_form_component(strip(@name, '/'))
     end
 
     # If the version is not empty:
@@ -245,35 +249,7 @@ class PackageURL
   end
 
   class << self
-    def strip(string, char)
-      string.delete_prefix(char).delete_suffix(char)
-    end
-
-    def parse_segments(string)
-      strip(string, '/').split('/')
-    end
-
-    def segment_present?(segment)
-      !segment.empty? && segment != '.' && segment != '..'
-    end
-
     private
-
-    def partition(string, sep, from: :left, require_separator: true)
-      value, separator, remainder = if from == :left
-                                      left, separator, right = string.partition(sep)
-                                      [left, separator, right]
-                                    else
-                                      left, separator, right = string.rpartition(sep)
-                                      [right, separator, left]
-                                    end
-
-      return [nil, value] if separator.empty? && require_separator
-
-      value = yield(value, remainder) if block_given?
-
-      [value, remainder]
-    end
 
     def parse_subpath(subpath)
       # - Split the subpath on '/'
@@ -340,8 +316,8 @@ class PackageURL
   def serialized_subpath
     return '' if subpath.nil?
 
-    self.class.parse_segments(subpath).map do |segment|
-      next unless self.class.segment_present?(segment)
+    parse_segments(subpath).map do |segment|
+      next unless segment_present?(segment)
 
       URI.encode_www_form_component(segment)
     end.join('/')
@@ -360,7 +336,7 @@ class PackageURL
   end
 
   def serialized_namespace
-    self.class.parse_segments(namespace).map do |segment|
+    parse_segments(namespace).map do |segment|
       next if segment.empty?
 
       URI.encode_www_form_component(segment)

@@ -76,100 +76,39 @@ class PackageURL
 
     # Split the purl string once from right on '#'
     # - The left side is the remainder
-    # - Strip the right side from leading and trailing '/'
-    # - Split this on '/'
-    # - Discard any empty string segment from that split
-    # - Discard any '.' or '..' segment from that split
-    # - Percent-decode each segment
-    # - UTF-8-decode each segment if needed in your programming language
-    # - Join segments back with a '/'
-    # - This is the subpath
-    case string.rpartition('#')
-    in String => remainder, separator, String => subpath unless separator.empty?
-      components[:subpath] = subpath.split('/').select do |segment|
-        !segment.empty? && segment != '.' && segment != '..'
-      end.compact.join('/')
-
-      string = remainder
-    else
-      components[:subpath] = nil
+    # - The right side will be parsed as the subpath
+    components[:subpath], string = partition(string, '#', from: :right) do |subpath|
+      parse_subpath(subpath)
     end
 
     # Split the remainder once from right on '?'
     # - The left side is the remainder
     # - The right side is the qualifiers string
-    # - Split the qualifiers on '&'. Each part is a key=value pair
-    # - For each pair, split the key=value once from left on '=':
-    # - The key is the lowercase left side
-    # - The value is the percent-decoded right side
-    # - UTF-8-decode the value if needed in your programming language
-    # - Discard any key/value pairs where the value is empty
-    # - If the key is checksums,
-    #   split the value on ',' to create a list of checksums
-    # - This list of key/value is the qualifiers object
-    case string.rpartition('?')
-    in String => remainder, separator, String => qualifiers unless separator.empty?
-      components[:qualifiers] = {}
-
-      qualifiers.split('&').each do |pair|
-        case pair.partition('=')
-        in String => key, separator, String => value unless separator.empty?
-          key = key.downcase
-          value = URI.decode_www_form_component(value)
-          next if value.empty?
-
-          case key
-          when 'checksums'
-            components[:qualifiers][key] = value.split(',')
-          else
-            components[:qualifiers][key] = value
-          end
-        else
-          next
-        end
-      end
-
-      string = remainder
-    else
-      components[:qualifiers] = nil
+    components[:qualifiers], string = partition(string, '?', from: :right) do |qualifiers|
+      parse_qualifiers(qualifiers)
     end
 
     # Split the remainder once from left on ':'
     # - The left side lowercased is the scheme
     # - The right side is the remainder
-    case string.partition(':')
-    in 'pkg', separator, String => remainder unless separator.empty?
-      string = remainder
-    else
-      raise InvalidPackageURL, 'invalid or missing "pkg:" URL scheme'
-    end
+    scheme, string = partition(string, ':', from: :left)
+    raise InvalidPackageURL, 'invalid or missing "pkg:" URL scheme' unless scheme == 'pkg'
 
     # Strip the remainder from leading and trailing '/'
     # - Split this once from left on '/'
     # - The left side lowercased is the type
     # - The right side is the remainder
     string = string.delete_suffix('/')
-    case string.partition('/')
-    in String => type, separator, remainder unless separator.empty?
-      components[:type] = type
-
-      string = remainder
-    else
-      raise InvalidPackageURL, 'invalid or missing package type'
-    end
+    components[:type], string = partition(string, '/', from: :left)
+    raise InvalidPackageURL, 'invalid or missing package type' if components[:type].empty?
 
     # Split the remainder once from right on '@'
     # - The left side is the remainder
     # - Percent-decode the right side. This is the version.
     # - UTF-8-decode the version if needed in your programming language
     # - This is the version
-    case string.rpartition('@')
-    in String => remainder, separator, String => version unless separator.empty?
-      components[:version] = URI.decode_www_form_component(version)
-
-      string = remainder
-    else
-      components[:version] = nil
+    components[:version], string = partition(string, '@', from: :right) do |version|
+      URI.decode_www_form_component(version)
     end
 
     # Split the remainder once from right on '/'
@@ -178,22 +117,11 @@ class PackageURL
     # - UTF-8-decode this name if needed in your programming language
     # - Apply type-specific normalization to the name if needed
     # - This is the name
-    case string.rpartition('/')
-    in String => remainder, separator, String => name unless separator.empty?
-      components[:name] = URI.decode_www_form_component(name)
-
-      # Split the remainder on '/'
-      # - Discard any empty segment from that split
-      # - Percent-decode each segment
-      # - UTF-8-decode the each segment if needed in your programming language
-      # - Apply type-specific normalization to each segment if needed
-      # - Join segments back with a '/'
-      # - This is the namespace
-      components[:namespace] = remainder.split('/').map { |s| URI.decode_www_form_component(s) }.compact.join('/')
-    in _, _, String => name
-      components[:name] = URI.decode_www_form_component(name)
-      components[:namespace] = nil
+    components[:name], string = partition(string, '/', from: :right, require_separator: false) do |name|
+      URI.decode_www_form_component(name)
     end
+
+    components[:namespace] = parse_namespace(string) unless string.empty?
 
     new(type: components[:type],
         name: components[:name],
@@ -231,6 +159,11 @@ class PackageURL
     purl += @type
     purl += '/'
 
+    # If the namespace is empty:
+    # - Apply type-specific normalization to the name if needed
+    # - UTF-8-encode the name if needed in your programming language
+    # - Append the percent-encoded name to the purl
+    #
     # If the namespace is not empty:
     # - Strip the namespace from leading and trailing '/'
     # - Split on '/' as segments
@@ -244,37 +177,21 @@ class PackageURL
     # - Apply type-specific normalization to the name if needed
     # - UTF-8-encode the name if needed in your programming language
     # - Append the percent-encoded name to the purl
-    #
-    # If the namespace is empty:
-    # - Apply type-specific normalization to the name if needed
-    # - UTF-8-encode the name if needed in your programming language
-    # - Append the percent-encoded name to the purl
-    case @namespace
-    in String => namespace unless namespace.empty?
-      segments = []
-      @namespace.delete_prefix('/').delete_suffix('/').split('/').each do |segment|
-        next if segment.empty?
-
-        segments << URI.encode_www_form_component(segment)
-      end
-      purl += segments.join('/')
-
-      purl += '/'
-      purl += URI.encode_www_form_component(@name.delete_prefix('/').delete_suffix('/'))
-    else
+    if @namespace.nil?
       purl += URI.encode_www_form_component(@name)
+    else
+      purl += serialized_namespace
+      purl += '/'
+      purl += URI.encode_www_form_component(self.class.strip(@name, '/'))
     end
 
     # If the version is not empty:
     # - Append '@' to the purl
     # - UTF-8-encode the version if needed in your programming language
     # - Append the percent-encoded version to the purl
-    case @version
-    in String => version unless version.empty?
+    unless @version.nil?
       purl += '@'
       purl += URI.encode_www_form_component(@version)
-    else
-      nil
     end
 
     # If the qualifiers are not empty and not composed only of key/value pairs
@@ -290,26 +207,9 @@ class PackageURL
     # - sort this list of qualifier strings lexicographically
     # - join this list of qualifier strings with a '&' ampersand
     # - Append this string to the purl
-    case @qualifiers
-    in Hash => qualifiers unless qualifiers.empty?
-      list = []
-      qualifiers.each do |key, value|
-        next if value.empty?
-
-        case [key, value]
-        in 'checksums', Array => checksums
-          list << "#{key.downcase}=#{checksums.join(',')}"
-        else
-          list << "#{key.downcase}=#{URI.encode_www_form_component(value)}"
-        end
-      end
-
-      unless list.empty?
-        purl += '?'
-        purl += list.sort.join('&')
-      end
-    else
-      nil
+    unless (qualifiers = serialized_qualifiers).empty?
+      purl += '?'
+      purl += qualifiers
     end
 
     # If the subpath is not empty and not composed only of
@@ -322,21 +222,9 @@ class PackageURL
     # - UTF-8-encode each segment if needed in your programming language
     # - Join the segments with '/'
     # - Append this to the purl
-    case @subpath
-    in String => subpath unless subpath.empty?
-      segments = []
-      subpath.delete_prefix('/').delete_suffix('/').split('/').each do |segment|
-        next if segment.empty? || segment == '.' || segment == '..'
-
-        segments << URI.encode_www_form_component(segment)
-      end
-
-      unless segments.empty?
-        purl += '#'
-        purl += segments.join('/')
-      end
-    else
-      nil
+    unless (subpath = serialized_subpath).empty?
+      purl += '#'
+      purl += subpath
     end
 
     purl
@@ -354,5 +242,128 @@ class PackageURL
   # of the package URL.
   def deconstruct_keys(_keys)
     to_h
+  end
+
+  class << self
+    def strip(string, char)
+      string.delete_prefix(char).delete_suffix(char)
+    end
+
+    def parse_segments(string)
+      strip(string, '/').split('/')
+    end
+
+    def segment_present?(segment)
+      !segment.empty? && segment != '.' && segment != '..'
+    end
+
+    private
+
+    def partition(string, sep, from: :left, require_separator: true)
+      value, separator, remainder = if from == :left
+                                      left, separator, right = string.partition(sep)
+                                      [left, separator, right]
+                                    else
+                                      left, separator, right = string.rpartition(sep)
+                                      [right, separator, left]
+                                    end
+
+      return [nil, value] if separator.empty? && require_separator
+
+      value = yield(value, remainder) if block_given?
+
+      [value, remainder]
+    end
+
+    def parse_subpath(subpath)
+      # - Split the subpath on '/'
+      # - Discard any empty string segment from that split
+      # - Discard any '.' or '..' segment from that split
+      # - Percent-decode each segment
+      # - UTF-8-decode each segment if needed in your programming language
+      # - Join segments back with a '/'
+      # - This is the subpath
+      subpath.split('/').filter_map do |segment|
+        next unless segment_present?(segment)
+
+        URI.decode_www_form_component(segment)
+      end.compact.join('/')
+    end
+
+    def parse_qualifiers(raw_qualifiers)
+      # - Split the qualifiers on '&'. Each part is a key=value pair
+      # - For each pair, split the key=value once from left on '=':
+      # - The key is the lowercase left side
+      # - The value is the percent-decoded right side
+      # - UTF-8-decode the value if needed in your programming language
+      # - Discard any key/value pairs where the value is empty
+      # - If the key is checksums,
+      #   split the value on ',' to create a list of checksums
+      # - This list of key/value is the qualifiers object
+      raw_qualifiers.split('&').each_with_object({}) do |pair, memo|
+        key, separator, value = pair.partition('=')
+
+        next if separator.empty?
+
+        key = key.downcase
+        value = URI.decode_www_form_component(value)
+
+        next if value.empty?
+
+        case key
+        when 'checksums'
+          memo[key] = value.split(',')
+        else
+          memo[key] = value
+        end
+      end
+    end
+
+    def parse_namespace(namespace)
+      # Split the remainder on '/'
+      # - Discard any empty segment from that split
+      # - Percent-decode each segment
+      # - UTF-8-decode the each segment if needed in your programming language
+      # - Apply type-specific normalization to each segment if needed
+      # - Join segments back with a '/'
+      # - This is the namespace
+      namespace.split('/').filter_map do |s|
+        next unless segment_present?(s)
+
+        URI.decode_www_form_component(s)
+      end.compact.join('/')
+    end
+  end
+
+  private
+
+  def serialized_subpath
+    return '' if subpath.nil?
+
+    self.class.parse_segments(subpath).map do |segment|
+      next unless self.class.segment_present?(segment)
+
+      URI.encode_www_form_component(segment)
+    end.join('/')
+  end
+
+  def serialized_qualifiers
+    return '' if qualifiers.nil?
+
+    qualifiers.map do |key, value|
+      next if value.empty?
+
+      next "#{key.downcase}=#{value.join(',')}" if key == 'checksums'
+
+      "#{key.downcase}=#{URI.encode_www_form_component(value)}"
+    end.sort.join('&')
+  end
+
+  def serialized_namespace
+    self.class.parse_segments(namespace).map do |segment|
+      next if segment.empty?
+
+      URI.encode_www_form_component(segment)
+    end.join('/')
   end
 end

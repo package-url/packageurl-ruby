@@ -18,6 +18,9 @@ end
 
 RSpec::Matchers.define :have_description do |expected|
   match do |actual|
-    actual.to_s == expected
+    @actual = actual.to_s
+    values_match?(expected, @actual)
   end
+
+  diffable
 end

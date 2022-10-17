@@ -8,12 +8,22 @@ class PackageURL
       string.delete_prefix(char).delete_suffix(char)
     end
 
-    def parse_segments(string)
+    def split_segments(string)
       strip(string, '/').split('/')
     end
 
     def segment_present?(segment)
       !segment.empty? && segment != '.' && segment != '..'
+    end
+
+    def serialize_segments(string)
+      return '' if string.nil?
+
+      split_segments(string).map do |segment|
+        next unless segment_present?(segment)
+
+        URI.encode_www_form_component(segment)
+      end.join('/')
     end
 
     # Partition the given string on the separator.

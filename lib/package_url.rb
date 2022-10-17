@@ -82,7 +82,7 @@ class PackageURL
     # - The left side is the remainder
     # - The right side will be parsed as the subpath
     components[:subpath], string = partition(string, '#', from: :right) do |subpath|
-      parse_subpath(subpath)
+      parse_segments(subpath)
     end
 
     # Split the remainder once from right on '?'
@@ -125,7 +125,7 @@ class PackageURL
       URI.decode_www_form_component(name)
     end
 
-    components[:namespace] = parse_namespace(string) unless string.empty?
+    components[:namespace] = parse_segments(string) unless string.empty?
 
     new(type: components[:type],
         name: components[:name],
@@ -184,7 +184,7 @@ class PackageURL
     if @namespace.nil?
       purl += URI.encode_www_form_component(@name)
     else
-      purl += serialized_namespace
+      purl += serialize_segments(@namespace)
       purl += '/'
       purl += URI.encode_www_form_component(strip(@name, '/'))
     end
@@ -226,9 +226,9 @@ class PackageURL
     # - UTF-8-encode each segment if needed in your programming language
     # - Join the segments with '/'
     # - Append this to the purl
-    unless (subpath = serialized_subpath).empty?
+    unless (serialized_subpath = serialize_segments(@subpath)).empty?
       purl += '#'
-      purl += subpath
+      purl += serialized_subpath
     end
 
     purl
@@ -251,7 +251,7 @@ class PackageURL
   class << self
     private
 
-    def parse_subpath(subpath)
+    def parse_segments(string)
       # - Split the subpath on '/'
       # - Discard any empty string segment from that split
       # - Discard any '.' or '..' segment from that split
@@ -259,11 +259,11 @@ class PackageURL
       # - UTF-8-decode each segment if needed in your programming language
       # - Join segments back with a '/'
       # - This is the subpath
-      subpath.split('/').filter_map do |segment|
+      string.split('/').filter_map do |segment|
         next unless segment_present?(segment)
 
         URI.decode_www_form_component(segment)
-      end.compact.join('/')
+      end.join('/')
     end
 
     def parse_qualifiers(raw_qualifiers)
@@ -294,52 +294,21 @@ class PackageURL
         end
       end
     end
-
-    def parse_namespace(namespace)
-      # Split the remainder on '/'
-      # - Discard any empty segment from that split
-      # - Percent-decode each segment
-      # - UTF-8-decode the each segment if needed in your programming language
-      # - Apply type-specific normalization to each segment if needed
-      # - Join segments back with a '/'
-      # - This is the namespace
-      namespace.split('/').filter_map do |s|
-        next unless segment_present?(s)
-
-        URI.decode_www_form_component(s)
-      end.compact.join('/')
-    end
   end
 
   private
 
-  def serialized_subpath
-    return '' if subpath.nil?
-
-    parse_segments(subpath).map do |segment|
-      next unless segment_present?(segment)
-
-      URI.encode_www_form_component(segment)
-    end.join('/')
-  end
-
   def serialized_qualifiers
     return '' if qualifiers.nil?
 
-    qualifiers.map do |key, value|
+    qualifiers.filter_map do |key, value|
       next if value.empty?
 
-      next "#{key.downcase}=#{value.join(',')}" if key == 'checksums'
+      key = URI.encode_www_form_component(key.downcase)
 
-      "#{key.downcase}=#{URI.encode_www_form_component(value)}"
+      next "#{key}=#{value.join(',')}" if key == 'checksums'
+
+      "#{key}=#{URI.encode_www_form_component(value)}"
     end.sort.join('&')
-  end
-
-  def serialized_namespace
-    parse_segments(namespace).map do |segment|
-      next if segment.empty?
-
-      URI.encode_www_form_component(segment)
-    end.join('/')
   end
 end

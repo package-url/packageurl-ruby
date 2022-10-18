@@ -304,11 +304,9 @@ class PackageURL
     qualifiers.filter_map do |key, value|
       next if value.empty?
 
-      key = URI.encode_www_form_component(key.downcase)
+      next "#{key.downcase}=#{value.join(',')}" if key == 'checksums'
 
-      next "#{key}=#{value.join(',')}" if key == 'checksums'
-
-      "#{key}=#{URI.encode_www_form_component(value)}"
+      "#{key.downcase}=#{URI.encode_www_form_component(value)}"
     end.sort.join('&')
   end
 end

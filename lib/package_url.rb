@@ -82,7 +82,10 @@ class PackageURL
     # - The left side is the remainder
     # - The right side will be parsed as the subpath
     components[:subpath], string = partition(string, '#', from: :right) do |subpath|
-      parse_segments(subpath)
+      parse_segments(subpath) do |segment|
+        # Discard segments which are blank, `.`, or `..`
+        segment.empty? || segment == '.' || segment == '..'
+      end
     end
 
     # Split the remainder once from right on '?'
@@ -125,7 +128,7 @@ class PackageURL
       URI.decode_www_form_component(name)
     end
 
-    components[:namespace] = parse_segments(string) unless string.empty?
+    components[:namespace] = parse_segments(string, &:empty?) unless string.empty?
 
     new(type: components[:type],
         name: components[:name],
@@ -184,7 +187,7 @@ class PackageURL
     if @namespace.nil?
       purl += URI.encode_www_form_component(@name)
     else
-      purl += serialize_segments(@namespace)
+      purl += serialize_segments(@namespace, &:empty?)
       purl += '/'
       purl += URI.encode_www_form_component(strip(@name, '/'))
     end
@@ -226,9 +229,9 @@ class PackageURL
     # - UTF-8-encode each segment if needed in your programming language
     # - Join the segments with '/'
     # - Append this to the purl
-    unless (serialized_subpath = serialize_segments(@subpath)).empty?
+    unless (subpath = serialized_subpath).empty?
       purl += '#'
-      purl += serialized_subpath
+      purl += subpath
     end
 
     purl
@@ -260,7 +263,7 @@ class PackageURL
       # - Join segments back with a '/'
       # - This is the subpath
       string.split('/').filter_map do |segment|
-        next unless segment_present?(segment)
+        next if block_given? && yield(segment)
 
         URI.decode_www_form_component(segment)
       end.join('/')
@@ -308,5 +311,12 @@ class PackageURL
 
       "#{key.downcase}=#{URI.encode_www_form_component(value)}"
     end.sort.join('&')
+  end
+
+  def serialized_subpath
+    serialize_segments(@subpath) do |segment|
+      # Discard segments which are blank, `.`, or `..`
+      segment.empty? || segment == '.' || segment == '..'
+    end
   end
 end

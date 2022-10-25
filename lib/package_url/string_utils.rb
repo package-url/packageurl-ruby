@@ -12,15 +12,11 @@ class PackageURL
       strip(string, '/').split('/')
     end
 
-    def segment_present?(segment)
-      !segment.empty? && segment != '.' && segment != '..'
-    end
-
     def serialize_segments(string)
       return '' if string.nil?
 
       split_segments(string).map do |segment|
-        next unless segment_present?(segment)
+        next if block_given? && yield(segment)
 
         URI.encode_www_form_component(segment)
       end.join('/')

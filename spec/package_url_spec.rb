@@ -205,14 +205,14 @@ RSpec.describe PackageURL do
     context 'when namespace or subpath contains empty segments', url: 'pkg:golang/google.golang.org//.././genproto#googleapis/..//./api/annotations' do
       it {
         should have_attributes type: 'golang',
-                               namespace: 'google.golang.org',
+                               namespace: 'google.golang.org/../.',
                                name: 'genproto',
                                version: nil,
                                qualifiers: nil,
                                subpath: 'googleapis/api/annotations'
       }
 
-      it { should have_description 'pkg:golang/google.golang.org/genproto#googleapis/api/annotations' }
+      it { should have_description 'pkg:golang/google.golang.org/.././genproto#googleapis/api/annotations' }
     end
 
     context 'when qualifiers have no value', url: 'pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25&foo=&bar=' do

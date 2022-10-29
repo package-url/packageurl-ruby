@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rspec/expectations'
+require 'rspec-parameterized'
 
 require 'package_url'
 

@@ -209,8 +209,6 @@ class PackageURL
       end
 
       purl.validate!
-
-      purl
     rescue ArgumentError => e
       raise InvalidPackageURL, e.message
     end
@@ -322,6 +320,8 @@ class PackageURL
       raise InvalidPackageURL, 'subpath cannot contain "."' if segment == '.'
       raise InvalidPackageURL, 'subpath cannot contain ".."' if segment == '..'
     end
+
+    self
   end
 
   def valid?
@@ -501,8 +501,8 @@ class PackageURL
     #    pkg:alpm/arch/python-pip@21.0-1?arch=any
     #    pkg:alpm/arch/containers-common@1:0.47.4-4?arch=x86_64
     'alpm' => lambda { |purl|
-                purl.namespace&.downcase!
-                purl.name&.downcase!
+                purl&.namespace&.downcase!
+                purl&.name&.downcase!
               },
 
     # `bitbucket` for Bitbucket-based packages:
@@ -517,8 +517,8 @@ class PackageURL
     # Examples:
     #    pkg:bitbucket/birkenfeld/pygments-main@244fd47e07d1014f0aed9c
     'bitbucket' => lambda { |purl|
-                     purl.namespace&.downcase!
-                     purl.name&.downcase!
+                     purl&.namespace&.downcase!
+                     purl&.name&.downcase!
                    },
 
     # `cocoapods` for Cocoapods:
@@ -534,7 +534,7 @@ class PackageURL
     #    pkg:cocoapods/ShareKit@2.0#Twitter
     #    pkg:cocoapods/GoogleUtilities@7.5.2#NSData+zlib
     'cocoapods' => lambda { |purl|
-                     if purl.name&.match?(/\s|\+|\A\./)
+                     if purl&.name&.match?(/\s|\+|\A\./)
                        raise InvalidPackageURL,
                              'name cannot contain whitespace, a plus (+) character, or begin with a period (.)'
                      end
@@ -583,7 +583,7 @@ class PackageURL
     #    pkg:conan/openssl.org/openssl@3.0.3?user=bincrafters&channel=stable
     #    pkg:conan/openssl.org/openssl@3.0.3?arch=x86_64&build_type=Debug&compiler=Visual%20Studio&compiler.runtime=MDd&compiler.version=16&os=Windows&shared=True&rrev=93a82349c31917d2d674d22065c7a9ef9f380c8e&prev=b429db8a0e324114c25ec387bfd8281f330d7c5c
     'conan' => lambda { |purl|
-                 if purl.namespace.nil? != purl.qualifiers&.fetch('channel').nil?
+                 if purl&.namespace.nil? != purl&.qualifiers&.fetch('channel').nil?
                    raise InvalidPackageURL, 'namespace and channel qualifiers must be used together'
                  end
                },
@@ -615,7 +615,7 @@ class PackageURL
     #       pkg:cran/rJava@1.0-4
     #       pkg:cran/caret@6.0-88
     'cran' => lambda { |purl|
-                raise InvalidPackageURL, 'version is required' if purl.version.nil?
+                raise InvalidPackageURL, 'version is required' if purl&.version.nil?
               },
 
     # `deb` for Debian, Debian derivatives, and Ubuntu packages:
@@ -645,8 +645,8 @@ class PackageURL
     #     pkg:deb/debian/attr@1:2.4.47-2?arch=source
     #     pkg:deb/debian/attr@1:2.4.47-2%2Bb1?arch=amd64
     'deb' => lambda { |purl|
-               purl.namespace&.downcase!
-               purl.name&.downcase!
+               purl&.namespace&.downcase!
+               purl&.name&.downcase!
              },
 
     # `docker` for Docker images
@@ -708,8 +708,8 @@ class PackageURL
     #    pkg:github/package-url/purl-spec@244fd47e07d1004
     #    pkg:github/package-url/purl-spec@244fd47e07d1004#everybody/loves/dogs
     'github' => lambda { |purl|
-                  purl.namespace&.downcase!
-                  purl.name&.downcase!
+                  purl&.namespace&.downcase!
+                  purl&.name&.downcase!
                 },
 
     # `golang` for Go packages
@@ -726,8 +726,8 @@ class PackageURL
     #    pkg:golang/google.golang.org/genproto#googleapis/api/annotations
     #    pkg:golang/github.com/gorilla/context@234fd47e07d1004f0aed9c#api
     'golang' => lambda { |purl|
-                  purl.namespace&.downcase!
-                  purl.name&.downcase!
+                  purl&.namespace&.downcase!
+                  purl&.name&.downcase!
                 },
 
     # `hackage` for Haskell packages
@@ -741,7 +741,7 @@ class PackageURL
     #    pkg:hackage/AC-HalfInteger@1.2.1
     #    pkg:hackage/3d-graphics-examples@0.0.0.2
     'hackage' => lambda { |purl|
-                   raise InvalidPackageURL, 'name must be kebab-case' unless purl.name =~ /^[a-z0-9-]+$/i
+                   raise InvalidPackageURL, 'name must be kebab-case' unless purl&.name =~ /^[a-z0-9-]+$/i
                  },
 
     # `hex` for Hex packages
@@ -759,8 +759,8 @@ class PackageURL
     #    pkg:hex/phoenix_html@2.13.3#priv/static/phoenix_html.js
     #    pkg:hex/bar@1.2.3?repository_url=https://myrepo.example.com
     'hex' => lambda { |purl|
-               purl.namespace&.downcase!
-               purl.name&.downcase!
+               purl&.namespace&.downcase!
+               purl&.name&.downcase!
              },
 
     # `maven` for Maven JARs and related artifacts
@@ -797,7 +797,7 @@ class PackageURL
     #    pkg:npm/%40angular/animation@12.3.1
     #    pkg:npm/mypackage@12.4.5?vcs_url=git://host.com/path/to/repo.git%404345abcd34343
     'npm' => lambda { |purl|
-               purl.name&.downcase!
+               purl&.name&.downcase!
              },
 
     # `nuget` for NuGet .NET packages:
@@ -809,7 +809,7 @@ class PackageURL
     # Examples:
     #    pkg:nuget/EnterpriseLibrary.Common@6.0.1304
     'nuget' => lambda { |purl|
-                 raise InvalidPackageURL, 'namespace is not allowed' if purl.namespace
+                 raise InvalidPackageURL, 'namespace is not allowed' if purl&.namespace
                },
 
     # `oci` for all artifacts stored in registries that conform to the
@@ -844,9 +844,9 @@ class PackageURL
     #    pkg:oci/static@sha256%3A244fd47e07d10?repository_url=gcr.io/distroless/static&tag=latest
     #    pkg:oci/hello-wasm@sha256%3A244fd47e07d10?tag=v1
     'oci' => lambda { |purl|
-               raise InvalidPackageURL, 'namespace is not allowed' if purl.namespace
+               raise InvalidPackageURL, 'namespace is not allowed' if purl&.namespace
 
-               purl.name&.downcase!
+               purl&.name&.downcase!
              },
 
     # `pub` for Dart and Flutter packages:
@@ -862,7 +862,7 @@ class PackageURL
     #   pkg:pub/flutter@0.0.0
     'pub' => lambda { |purl|
                purl.name&.downcase!
-               unless purl.name =~ /^[a-z0-9_]+$/
+               unless purl&.name =~ /^[a-z0-9_]+$/
                  raise InvalidPackageURL,
                        'name may only contain lowercase letters, digits, and underscores'
                end
@@ -879,8 +879,8 @@ class PackageURL
     #    pkg:pypi/django@1.11.1
     #    pkg:pypi/django-allauth@12.23
     'pypi' => lambda { |purl|
-                purl.name&.downcase!
-                purl.name&.gsub!('_', '-')
+                purl&.name&.downcase!
+                purl&.name&.gsub!('_', '-')
               },
 
     # `rpm` for RPMs:
@@ -901,7 +901,7 @@ class PackageURL
     #    pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25
     #    pkg:rpm/centerim@4.22.10-1.el6?arch=i686&epoch=1&distro=fedora-25
     'rpm' => lambda { |purl|
-               purl.namespace&.downcase!
+               purl&.namespace&.downcase!
              },
 
     # `swid` for ISO-IEC 19770-2 Software Identification (SWID) tags:
@@ -946,7 +946,7 @@ class PackageURL
     #    pkg:swid/Fedora@29?tag_id=org.fedoraproject.Fedora-29
     #    pkg:swid/Adobe+Systems+Incorporated/Adobe+InDesign@CC?tag_id=CreativeCloud-CS6-Win-GM-MUL
     'swid' => lambda { |purl|
-                if purl.namespace&.split('/')&.length > 2
+                if purl&.namespace&.split('/')&.length > 2
                   raise InvalidPackageURL,
                         'namespace may have at most two path components'
                 end
@@ -963,8 +963,8 @@ class PackageURL
     #    pkg:swift/github.com/Alamofire/Alamofire@5.4.3
     #    pkg:swift/github.com/RxSwiftCommunity/RxFlow@2.12.4
     'swift' => lambda { |purl|
-                 raise InvalidPackageURL, 'namespace is required' if purl.namespace.nil?
-                 raise InvalidPackageURL, 'version is required' if purl.version.nil?
+                 raise InvalidPackageURL, 'namespace is required' if purl&.namespace.nil?
+                 raise InvalidPackageURL, 'version is required' if purl&.version.nil?
                }
   }
 

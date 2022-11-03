@@ -9,32 +9,41 @@ class PackageURL
   attr_reader qualifiers: Hash[String, String]?
   attr_reader subpath: String?
 
-  def initialize: (type: String `type`, 
-                   ?namespace: String? namespace, 
-                   name: String name, 
-                   ?version: String? version, 
-                   ?qualifiers: Hash[String, String]? qualifiers, 
+  def initialize: (type: String `type`,
+                   ?namespace: String? namespace,
+                   name: String name,
+                   ?version: String? version,
+                   ?qualifiers: Hash[String, String]? qualifiers,
                    ?subpath: String? subpath) -> void
-                
+
   def self.parse: (String string) -> PackageURL?
 
-  def to_h: () -> { scheme: String, 
-                    type: String, 
-                    namespace: String?, 
-                    name: String?, 
-                    version: String?, 
-                    qualifiers: Hash[String, String]?, 
+  def validate!: () -> PackageURL
+  def valid?: () -> bool
+
+  def to_h: () -> { scheme: String,
+                    type: String,
+                    namespace: String?,
+                    name: String?,
+                    version: String?,
+                    qualifiers: Hash[String, String]?,
                     subpath: String? }
 
   def to_s: () -> String
 
   def deconstruct: () -> Array[String | Hash[String, String] | nil]
 
-  def deconstruct_keys: (Array[Symbol] keys) -> { scheme: String, 
-                                                  type: String, 
-                                                  namespace: String?, 
-                                                  name: String?, 
-                                                  version: String?, 
-                                                  qualifiers: Hash[String, String]?, 
+  def deconstruct_keys: (Array[Symbol] keys) -> { scheme: String,
+                                                  type: String,
+                                                  namespace: String?,
+                                                  name: String?,
+                                                  version: String?,
+                                                  qualifiers: Hash[String, String]?,
                                                   subpath: String? }
+
+  TYPES: ::Hash[String, untyped]
+
+  private
+
+  def encode: (String string) -> String
 end

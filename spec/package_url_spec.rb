@@ -67,125 +67,20 @@ RSpec.describe PackageURL do
 
     subject { |example| PackageURL.parse(example.metadata[:url]) }
 
-    # These tests were translated from the test suite data file provided at
-    # https://github.com/package-url/purl-spec/blob/0b1559f76b79829e789c4f20e6d832c7314762c5/README.rst#some-purl-examples.
+    test_suite = JSON.parse(File.read('spec/fixtures/test-suite-data.json'))
+    test_suite.each do |test|
+      context "with #{test['description']}", url: test['purl'] do
+        it {
+          should have_attributes type: test['type'],
+                                 namespace: test['namespace'],
+                                 name: test['name'],
+                                 version: test['version'],
+                                 qualifiers: test['qualifiers'],
+                                 subpath: test['subpath']
+        }
 
-    context 'with valid RubyGems package URL', url: 'pkg:gem/ruby-advisory-db-check@0.12.4' do
-      it {
-        should have_attributes type: 'gem',
-                               namespace: nil,
-                               name: 'ruby-advisory-db-check',
-                               version: '0.12.4',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:gem/ruby-advisory-db-check@0.12.4' }
-    end
-
-    context 'with valid BitBucket package URL', url: 'pkg:bitbucket/birkenfeld/pygments-main@244fd47e07d1014f0aed9c' do
-      it {
-        should have_attributes type: 'bitbucket',
-                               namespace: 'birkenfeld',
-                               name: 'pygments-main',
-                               version: '244fd47e07d1014f0aed9c',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:bitbucket/birkenfeld/pygments-main@244fd47e07d1014f0aed9c' }
-    end
-
-    context 'with valid GitHub package URL', url: 'pkg:github/package-url/purl-spec@244fd47e07d1004f0aed9c' do
-      it {
-        should have_attributes type: 'github',
-                               namespace: 'package-url',
-                               name: 'purl-spec',
-                               version: '244fd47e07d1004f0aed9c',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:github/package-url/purl-spec@244fd47e07d1004f0aed9c' }
-    end
-
-    context 'with valid Go module URL', url: 'pkg:golang/google.golang.org/genproto#googleapis/api/annotations' do
-      it {
-        should have_attributes type: 'golang',
-                               namespace: 'google.golang.org',
-                               name: 'genproto',
-                               version: nil,
-                               qualifiers: nil,
-                               subpath: 'googleapis/api/annotations'
-      }
-
-      it { should have_description 'pkg:golang/google.golang.org/genproto#googleapis/api/annotations' }
-    end
-
-    context 'with valid Maven package URL', url: 'pkg:maven/org.apache.commons/io@1.3.4' do
-      it {
-        should have_attributes type: 'maven',
-                               namespace: 'org.apache.commons',
-                               name: 'io',
-                               version: '1.3.4',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:maven/org.apache.commons/io@1.3.4' }
-    end
-
-    context 'with valid NPM package URL', url: 'pkg:npm/foobar@12.3.1' do
-      it {
-        should have_attributes type: 'npm',
-                               namespace: nil,
-                               name: 'foobar',
-                               version: '12.3.1',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:npm/foobar@12.3.1' }
-    end
-
-    context 'with valid NuGet package URL', url: 'pkg:nuget/EnterpriseLibrary.Common@6.0.1304' do
-      it {
-        should have_attributes type: 'nuget',
-                               namespace: nil,
-                               name: 'EnterpriseLibrary.Common',
-                               version: '6.0.1304',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:nuget/EnterpriseLibrary.Common@6.0.1304' }
-    end
-
-    context 'with valid PyPI package URL', url: 'pkg:pypi/django@1.11.1' do
-      it {
-        should have_attributes type: 'pypi',
-                               namespace: nil,
-                               name: 'django',
-                               version: '1.11.1',
-                               qualifiers: nil,
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:pypi/django@1.11.1' }
-    end
-
-    context 'with valid RPM package URL', url: 'pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25' do
-      it {
-        should have_attributes type: 'rpm',
-                               namespace: 'fedora',
-                               name: 'curl',
-                               version: '7.50.3-1.fc25',
-                               qualifiers: { 'arch' => 'i386',
-                                             'distro' => 'fedora-25' },
-                               subpath: nil
-      }
-
-      it { should have_description 'pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25' }
+        it { should have_description test['canonical_purl'] }
+      end
     end
   end
 

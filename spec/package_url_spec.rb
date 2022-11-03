@@ -38,22 +38,6 @@ RSpec.describe PackageURL do
 
       expect(purl).to have_attributes(**components)
     end
-
-    context 'normalization' do
-      it 'should lowercase provided type component' do
-        purl = PackageURL.new(type: 'EXAMPLE', name: 'test')
-
-        expect(purl.type).to eq('example')
-        expect(purl.name).to eq('test')
-      end
-
-      it 'should not lowercase provided name component' do
-        purl = PackageURL.new(type: 'example', name: 'TEST')
-
-        expect(purl.type).to eq('example')
-        expect(purl.name).to eq('TEST')
-      end
-    end
   end
 
   describe '#parse' do
@@ -61,25 +45,26 @@ RSpec.describe PackageURL do
       expect { PackageURL.parse }.to raise_error(ArgumentError)
     end
 
-    it 'should raise an error if an invalid package URL string is passed' do
-      expect { PackageURL.parse('invalid') }.to raise_error(PackageURL::InvalidPackageURL)
-    end
-
-    subject { |example| PackageURL.parse(example.metadata[:url]) }
-
     test_suite = JSON.parse(File.read('spec/fixtures/test-suite-data.json'))
     test_suite.each do |test|
-      context "with #{test['description']}", url: test['purl'] do
-        it {
-          should have_attributes type: test['type'],
-                                 namespace: test['namespace'],
-                                 name: test['name'],
-                                 version: test['version'],
-                                 qualifiers: test['qualifiers'],
-                                 subpath: test['subpath']
-        }
+      context "with #{test['description']} (`#{test['purl']}`)" do
+        subject { -> { PackageURL.parse(test['purl']) } }
 
-        it { should have_description test['canonical_purl'] }
+        if test['is_invalid']
+          it 'should raise an error' do
+            should raise_error(PackageURL::InvalidPackageURL)
+          end
+        else
+          it 'should match expected attributes' do
+            expect(subject.call).to have_attributes type: test['type'],
+                                                    namespace: test['namespace'],
+                                                    name: test['name'],
+                                                    version: test['version'],
+                                                    qualifiers: test['qualifiers'],
+                                                    subpath: test['subpath']
+            expect(subject.call.to_s).to eq(test['canonical_purl'])
+          end
+        end
       end
     end
   end

@@ -2,8 +2,24 @@
 
 require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
+require 'open-uri'
 
-RSpec::Core::RakeTask.new(:spec)
+require 'rake/clean'
+
+RSpec::Core::RakeTask.new(:spec, [] => ['spec/fixtures/test-suite-data.json'])
+
+directory 'spec/fixtures/'
+file 'spec/fixtures/test-suite-data.json' => 'spec/fixtures/' do |t|
+  url = 'https://raw.githubusercontent.com/package-url/purl-spec/master/test-suite-data.json'
+
+  File.open(t.name, 'wb') do |file|
+    URI.open(url) do |uri|
+      file.write(uri.read)
+    end
+  end
+end
+
+CLOBBER << 'spec/fixtures/test-suite-data.json'
 
 task :lint do
   system 'rubocop'

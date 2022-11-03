@@ -12,12 +12,14 @@ Metrics/BlockLength:
 Metrics/CyclomaticComplexity:
   Enabled: false
 Metrics/ClassLength:
-  Max: 500
+  Enabled: false
 Metrics/MethodLength:
-  Max: 100
+  Enabled: false
 Metrics/ParameterLists:
   Max: 7
 Metrics/PerceivedComplexity:
-  Max: 15
+  Max: 25
+Layout/LineLength:
+  Enabled: false
 Style/ConditionalAssignment:
   Enabled: false

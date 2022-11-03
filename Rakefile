@@ -10,10 +10,8 @@ RSpec::Core::RakeTask.new(:spec, [] => ['spec/fixtures/test-suite-data.json'])
 
 directory 'spec/fixtures/'
 file 'spec/fixtures/test-suite-data.json' => 'spec/fixtures/' do |t|
-  url = 'https://raw.githubusercontent.com/package-url/purl-spec/master/test-suite-data.json'
-
   File.open(t.name, 'wb') do |file|
-    URI.open(url) do |uri|
+    URI.open('https://raw.githubusercontent.com/package-url/purl-spec/master/test-suite-data.json') do |uri|
       file.write(uri.read)
     end
   end

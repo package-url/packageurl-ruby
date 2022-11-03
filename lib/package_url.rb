@@ -204,9 +204,8 @@ class PackageURL
                  qualifiers: components[:qualifiers],
                  subpath: components[:subpath])
 
-      if rules = TYPES[purl.type]
-        rules.call(purl)
-      end
+      rules = TYPES[purl.type]
+      rules&.call(purl)
 
       purl.validate!
     rescue ArgumentError => e
@@ -563,29 +562,45 @@ class PackageURL
     #    pkg:composer/laravel/laravel@5.5.0
     'composer' => ->(purl) {},
 
-    # `conan` for Conan C/C++ packages. The purl is designed to closely resemble the Conan-native `<package-name>/<package-version>@<user>/<channel>` `syntax for package references <https://docs.conan.io/en/1.46/cheatsheet.html#package-terminology>`_.
+    # `conan` for Conan C/C++ packages.
+    #
+    # The purl is designed to closely resemble the Conan-native
+    # `<package-name>/<package-version>@<user>/<channel>`
+    # syntax for package references
+    # <https://docs.conan.io/en/1.46/cheatsheet.html#package-terminology>`.
     #
     # - `name`: The Conan `<package-name>`.
     # - `version`: The Conan `<package-version>`.
     # - `namespace`: The vendor of the package.
-    # - Qualifier `user`: The Conan `<user>`. Only required if the Conan package was published with `<user>`.
-    # - Qualifier `channel`: The Conan `<channel>`. Only required if the Conan package was published with Conan `<channel>`.
-    # - Qualifier `rrev`: The Conan recipe revision (optional). If omitted, the purl refers to the latest recipe revision available for the given version.
-    # - Qualifier `prev`: The Conan package revision (optional). If omitted, the purl refers to the latest package revision available for the given version and recipe revision.
-    # - Qualifier `repository_url`: The Conan repository where the package is available (optional). If ommitted, `https://center.conan.io` as default repository is assumed.
+    # - Qualifier `user`: The Conan `<user>`.
+    #   Only required if the Conan package was published with `<user>`.
+    # - Qualifier `channel`: The Conan `<channel>`.
+    #   Only required if the Conan package was published with Conan `<channel>`.
+    # - Qualifier `rrev`: The Conan recipe revision (optional).
+    #   If omitted, the purl refers to the latest recipe revision
+    #   available for the given version.
+    # - Qualifier `prev`: The Conan package revision (optional).
+    #   If omitted, the purl refers to the latest package revision available
+    #   for the given version and recipe revision.
+    # - Qualifier `repository_url`: The Conan repository where
+    #   the package is available (optional).
+    #   If omitted, `https://center.conan.io` as default repository is assumed.
     #
-    # Additional qualifiers can be used to distinguish Conan packages with different settings or options, e.g. `os=Linux`, `build_type=Debug` or `shared=True`.
+    # Additional qualifiers can be used to distinguish Conan packages
+    # with different settings or options,
+    # e.g. `os=Linux`, `build_type=Debug` or `shared=True`.
     #
-    # If no additional qualifiers are used to distinguish Conan packages build with different settings or options, then the purl is ambiguous and it is up to the user to work out which package is being referred to (e.g. with context information).
+    # If no additional qualifiers are used to distinguish Conan packages build
+    # with different settings or options,
+    # then the purl is ambiguous and it is up to the user to work out
+    # which package is being referred to (e.g. with context information).
     #
     # Examples::
     #    pkg:conan/openssl@3.0.3
     #    pkg:conan/openssl.org/openssl@3.0.3?user=bincrafters&channel=stable
     #    pkg:conan/openssl.org/openssl@3.0.3?arch=x86_64&build_type=Debug&compiler=Visual%20Studio&compiler.runtime=MDd&compiler.version=16&os=Windows&shared=True&rrev=93a82349c31917d2d674d22065c7a9ef9f380c8e&prev=b429db8a0e324114c25ec387bfd8281f330d7c5c
     'conan' => lambda { |purl|
-                 if purl&.namespace.nil? != purl&.qualifiers&.fetch('channel').nil?
-                   raise InvalidPackageURL, 'namespace and channel qualifiers must be used together'
-                 end
+                 raise InvalidPackageURL, 'namespace and channel qualifiers must be used together' if purl&.namespace.nil? != purl&.qualifiers&.fetch('channel').nil?
                },
 
     # `conda` for Conda packages:
@@ -946,7 +961,7 @@ class PackageURL
     #    pkg:swid/Fedora@29?tag_id=org.fedoraproject.Fedora-29
     #    pkg:swid/Adobe+Systems+Incorporated/Adobe+InDesign@CC?tag_id=CreativeCloud-CS6-Win-GM-MUL
     'swid' => lambda { |purl|
-                if purl&.namespace&.split('/')&.length > 2
+                if purl&.namespace&.split('/')&.length&.> 2
                   raise InvalidPackageURL,
                         'namespace may have at most two path components'
                 end
@@ -966,7 +981,7 @@ class PackageURL
                  raise InvalidPackageURL, 'namespace is required' if purl&.namespace.nil?
                  raise InvalidPackageURL, 'version is required' if purl&.version.nil?
                }
-  }
+  }.freeze
 
   private
 

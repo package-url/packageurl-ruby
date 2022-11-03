@@ -10,6 +10,7 @@ target :lib do
   configure_code_diagnostics do |config|
     config[Steep::Diagnostic::Ruby::UnsupportedSyntax] = :hint
     config[Steep::Diagnostic::Ruby::MethodDefinitionMissing] = :hint
+    config[Steep::Diagnostic::Ruby::NoMethod] = :hint
   end
 end
 

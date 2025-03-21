@@ -212,7 +212,7 @@ RSpec.describe PackageURL do
                                qualifiers: nil,
                                subpath: 'path/ space/?query/%percent'
       }
-      
+
       it 'should properly round-trip the URL' do
         expect(subject.to_s).to eq('pkg:type/name#path/%20space/%3Fquery/%25percent')
       end
@@ -227,7 +227,7 @@ RSpec.describe PackageURL do
                                qualifiers: nil,
                                subpath: '%'
       }
-      
+
       it 'should properly round-trip the URL' do
         expect(subject.to_s).to eq('pkg:t/n#%25')
       end

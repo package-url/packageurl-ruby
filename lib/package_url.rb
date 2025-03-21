@@ -95,7 +95,7 @@ class PackageURL
     in String => remainder, separator, String => subpath unless separator.empty?
       components[:subpath] = subpath.split('/').select do |segment|
         !segment.empty? && segment != '.' && segment != '..'
-      end.compact.join('/')
+      end.map { |segment| URI.decode_www_form_component(segment) }.compact.join('/')
 
       string = remainder
     else
@@ -160,7 +160,7 @@ class PackageURL
     case string.partition('/')
     in String => type, separator, remainder unless separator.empty?
       components[:type] = type
-      
+
       string = remainder
     else
       raise InvalidPackageURL, 'invalid or missing package type'
@@ -344,7 +344,13 @@ class PackageURL
       subpath.delete_prefix('/').delete_suffix('/').split('/').each do |segment|
         next if segment.empty? || segment == '.' || segment == '..'
 
-        segments << URI.encode_www_form_component(segment)
+        # Custom encoding for URL fragment segments:
+        # 1. Explicitly encode % as %25 to prevent double-encoding issues
+        # 2. Percent-encode special characters according to URL fragment rules
+        # 3. This ensures proper round-trip encoding/decoding with the parse method
+        segments << segment.gsub(/%|[^A-Za-z0-9\-\._~]/) { |m|
+          m == '%' ? '%25' : "%%%02X" % m.ord
+        }
       end
 
       unless segments.empty?

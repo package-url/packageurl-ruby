@@ -188,6 +188,51 @@ RSpec.describe PackageURL do
       it { should have_description 'pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25' }
     end
 
+    context 'with escaped subpath characters', url: 'pkg:type/name#path/with/%25/percent' do
+      it {
+        should have_attributes type: 'type',
+                               namespace: nil,
+                               name: 'name',
+                               version: nil,
+                               qualifiers: nil,
+                               subpath: 'path/with/%/percent'
+      }
+
+      it 'should properly round-trip the URL' do
+        expect(subject.to_s).to eq('pkg:type/name#path/with/%25/percent')
+      end
+    end
+
+    context 'with multiple escaped subpath characters', url: 'pkg:type/name#path/%20space/%3Fquery/%25percent' do
+      it {
+        should have_attributes type: 'type',
+                               namespace: nil,
+                               name: 'name',
+                               version: nil,
+                               qualifiers: nil,
+                               subpath: 'path/ space/?query/%percent'
+      }
+      
+      it 'should properly round-trip the URL' do
+        expect(subject.to_s).to eq('pkg:type/name#path/%20space/%3Fquery/%25percent')
+      end
+    end
+
+    context 'with the specific issue case', url: 'pkg:t/n#%25' do
+      it {
+        should have_attributes type: 't',
+                               namespace: nil,
+                               name: 'n',
+                               version: nil,
+                               qualifiers: nil,
+                               subpath: '%'
+      }
+      
+      it 'should properly round-trip the URL' do
+        expect(subject.to_s).to eq('pkg:t/n#%25')
+      end
+    end
+
     context 'with URLs containing extra slashes after scheme' do
       it 'should parse pkg:/type/namespace/name correctly' do
         purl = PackageURL.parse('pkg:/maven/org.apache.commons/io')

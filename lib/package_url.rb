@@ -72,7 +72,14 @@ class PackageURL
   # @raise [InvalidPackageURL] If the string is not a valid package URL.
   # @return [PackageURL]
   def self.parse(string)
-    components = {}
+    components = {
+      type: nil,
+      namespace: nil,
+      name: nil,
+      version: nil,
+      qualifiers: nil,
+      subpath: nil
+    }
 
     # Split the purl string once from right on '#'
     # - The left side is the remainder
@@ -195,8 +202,16 @@ class PackageURL
       components[:namespace] = nil
     end
 
-    new(type: components[:type],
-        name: components[:name],
+    # Ensure type and name are not nil before creating the PackageURL instance
+    raise InvalidPackageURL, 'missing package type' if components[:type].nil?
+    raise InvalidPackageURL, 'missing package name' if components[:name].nil?
+
+    # Create a new PackageURL with validated components
+    type = components[:type] || ''  # This ensures type is never nil
+    name = components[:name] || ''  # This ensures name is never nil
+
+    new(type: type,
+        name: name,
         namespace: components[:namespace],
         version: components[:version],
         qualifiers: components[:qualifiers],

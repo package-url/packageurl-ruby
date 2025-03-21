@@ -152,14 +152,15 @@ class PackageURL
     end
 
     # Strip the remainder from leading and trailing '/'
+    # Use gsub to remove ALL leading slashes instead of just one
+    string = string.gsub(/^\/+/, '').delete_suffix('/')
     # - Split this once from left on '/'
     # - The left side lowercased is the type
     # - The right side is the remainder
-    string = string.delete_suffix('/')
     case string.partition('/')
     in String => type, separator, remainder unless separator.empty?
       components[:type] = type
-
+      
       string = remainder
     else
       raise InvalidPackageURL, 'invalid or missing package type'

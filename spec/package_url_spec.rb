@@ -187,6 +187,44 @@ RSpec.describe PackageURL do
 
       it { should have_description 'pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25' }
     end
+
+    context 'with URLs containing extra slashes after scheme' do
+      it 'should parse pkg:/type/namespace/name correctly' do
+        purl = PackageURL.parse('pkg:/maven/org.apache.commons/io')
+        expect(purl).to have_attributes(
+          type: 'maven',
+          namespace: 'org.apache.commons',
+          name: 'io',
+          version: nil,
+          qualifiers: nil,
+          subpath: nil
+        )
+      end
+
+      it 'should parse pkg://type/namespace/name correctly' do
+        purl = PackageURL.parse('pkg://maven/org.apache.commons/io')
+        expect(purl).to have_attributes(
+          type: 'maven',
+          namespace: 'org.apache.commons',
+          name: 'io',
+          version: nil,
+          qualifiers: nil,
+          subpath: nil
+        )
+      end
+
+      it 'should parse pkg:///type/namespace/name correctly' do
+        purl = PackageURL.parse('pkg:///maven/org.apache.commons/io')
+        expect(purl).to have_attributes(
+          type: 'maven',
+          namespace: 'org.apache.commons',
+          name: 'io',
+          version: nil,
+          qualifiers: nil,
+          subpath: nil
+        )
+      end
+    end
   end
 
   describe 'pattern matching' do

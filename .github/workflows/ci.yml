@@ -11,10 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: ["2.7", "3.0"]
-
-    env:
-      RUBYOPT: "-W:no-experimental"
+        ruby-version: ["3.2", "3.3", "3.4"]
 
     steps:
       - uses: actions/checkout@v2

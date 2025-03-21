@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   DESCRIPTION
 
   spec.homepage = 'https://github.com/package-url/packageurl-ruby'
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.7.0')
+  spec.required_ruby_version = Gem::Requirement.new('>= 3.1.0')
 
   spec.license = 'MIT'
   spec.metadata['homepage_uri'] = spec.homepage

@@ -79,6 +79,7 @@ GEM
     yard (0.9.26)
 
 PLATFORMS
+  arm64-darwin-24
   x86_64-darwin-19
   x86_64-darwin-20
   x86_64-linux
@@ -95,4 +96,4 @@ DEPENDENCIES
   yard (~> 0.9.0)
 
 BUNDLED WITH
-   2.2.32
+   2.6.6

@@ -76,7 +76,7 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (2.1.0)
-    yard (0.9.26)
+    yard (0.9.36)
 
 PLATFORMS
   x86_64-darwin-19
@@ -92,7 +92,7 @@ DEPENDENCIES
   rubocop-rake (~> 0.6.0)
   rubocop-rspec (~> 2.6.0)
   steep (~> 0.46.0)
-  yard (~> 0.9.0)
+  yard (~> 0.9.36)
 
 BUNDLED WITH
    2.2.32

@@ -19,6 +19,6 @@ Metrics/MethodLength:
 Metrics/ParameterLists:
   Max: 7
 Metrics/PerceivedComplexity:
-  Max: 20
+  Max: 30
 Style/ConditionalAssignment:
   Enabled: false

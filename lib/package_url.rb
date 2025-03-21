@@ -93,9 +93,14 @@ class PackageURL
     # - This is the subpath
     case string.rpartition('#')
     in String => remainder, separator, String => subpath unless separator.empty?
-      components[:subpath] = subpath.split('/').select do |segment|
-        !segment.empty? && segment != '.' && segment != '..'
-      end.compact.join('/')
+      subpath_components = []
+      subpath.split('/').each do |segment|
+        next if segment.empty? || segment == '.' || segment == '..'
+
+        subpath_components << URI.decode_www_form_component(segment)
+      end
+
+      components[:subpath] = subpath_components.compact.join('/')
 
       string = remainder
     else
@@ -152,10 +157,11 @@ class PackageURL
     end
 
     # Strip the remainder from leading and trailing '/'
+    # Use gsub to remove ALL leading slashes instead of just one
+    string = string.gsub(%r{^/+}, '').delete_suffix('/')
     # - Split this once from left on '/'
     # - The left side lowercased is the type
     # - The right side is the remainder
-    string = string.delete_suffix('/')
     case string.partition('/')
     in String => type, separator, remainder unless separator.empty?
       components[:type] = type
@@ -343,7 +349,13 @@ class PackageURL
       subpath.delete_prefix('/').delete_suffix('/').split('/').each do |segment|
         next if segment.empty? || segment == '.' || segment == '..'
 
-        segments << URI.encode_www_form_component(segment)
+        # Custom encoding for URL fragment segments:
+        # 1. Explicitly encode % as %25 to prevent double-encoding issues
+        # 2. Percent-encode special characters according to URL fragment rules
+        # 3. This ensures proper round-trip encoding/decoding with the parse method
+        segments << segment.gsub(/%|[^A-Za-z0-9\-\._~]/) do |m|
+          m == '%' ? '%25' : format('%%%02X', m.ord)
+        end
       end
 
       unless segments.empty?
